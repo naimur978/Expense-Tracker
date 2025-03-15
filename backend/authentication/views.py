@@ -10,6 +10,23 @@ User = get_user_model()
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     permission_classes = (permissions.AllowAny,)
+    
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            user = User.objects.get(username=request.data['username'])
+            response.data = {
+                'tokens': {
+                    'access': response.data['access'],
+                    'refresh': response.data['refresh']
+                },
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                }
+            }
+        return response
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
