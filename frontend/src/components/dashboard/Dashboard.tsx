@@ -6,106 +6,80 @@ import { api } from '../../services/api';
 
 const Dashboard: React.FC = () => {
   const { state } = useExpense();
-  const { expenses, loading, error } = state;
+  const { expenses } = state;
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [totalExpense, setTotalExpense] = useState(0);
+  const [monthlyExpense, setMonthlyExpense] = useState(0);
   const [categoryTotals, setCategoryTotals] = useState<Record<ExpenseCategory, number>>({} as Record<ExpenseCategory, number>);
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
-  const [summary, setSummary] = useState<any>(null);
 
-  // Calculate totals effect
+  // Calculate totals and fetch summary data
   useEffect(() => {
-    if (!expenses.length) return;
-
-    const total = expenses.reduce((sum, expense) => Number(sum) + Number(expense.amount), 0);
-    setTotalExpense(total);
-
-    const sortedExpenses = [...expenses].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    setRecentExpenses(sortedExpenses.slice(0, 5));
-  }, [expenses]);
-
-  // Fetch summary data from API
-  useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-
-    let isMounted = true;
-    const fetchSummary = async () => {
+    const fetchData = async () => {
       setSummaryLoading(true);
       try {
         const summaryData = await api.getExpenseSummary('monthly');
-        if (!isMounted) return;
         
-        setSummary(summaryData);
-        
+        // Calculate totals from expenses
+        const total = expenses.reduce((sum, expense) => Number(sum) + Number(expense.amount), 0);
+        setTotalExpense(total);
+
+        // Calculate monthly expenses
+        const today = new Date();
+        const monthlyTotal = expenses
+          .filter(expense => {
+            const expenseDate = new Date(expense.date);
+            return (
+              expenseDate.getMonth() === today.getMonth() &&
+              expenseDate.getFullYear() === today.getFullYear()
+            );
+          })
+          .reduce((sum, expense) => Number(sum) + Number(expense.amount), 0);
+        setMonthlyExpense(monthlyTotal);
+
+        // Sort recent expenses
+        const sortedExpenses = [...expenses].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setRecentExpenses(sortedExpenses.slice(0, 5));
+
         // Process category totals from the API response
-        const categoryMap: Record<ExpenseCategory, number> = {
-          'Food & Dining': 0,
-          'Transportation': 0,
-          'Utilities': 0,
-          'Housing': 0,
-          'Entertainment': 0,
-          'Healthcare': 0,
-          'Shopping': 0,
-          'Personal Care': 0,
-          'Education': 0,
-          'Travel': 0,
-          'Other': 0
-        };
-        
-        if (summaryData.category_totals) {
-          summaryData.category_totals.forEach((item: { category: ExpenseCategory; total: number }) => {
-            categoryMap[item.category] = item.total;
-          });
-        }
-        
-        if (isMounted) {
+        if (summaryData?.category_totals) {
+          const categoryMap = summaryData.category_totals.reduce((acc: Record<ExpenseCategory, number>, item: { category: ExpenseCategory; total: number }) => {
+            acc[item.category] = item.total;
+            return acc;
+          }, {} as Record<ExpenseCategory, number>);
+          
           setCategoryTotals(categoryMap);
-          setSummaryError(null);
         }
+        
+        setSummaryError(null);
       } catch (err) {
-        if (isMounted) {
-          setSummaryError('Failed to load expense summary');
-          console.error('Failed to fetch summary:', err);
-        }
+        setSummaryError('Failed to load expense summary');
+        console.error('Failed to fetch summary:', err);
       } finally {
-        if (isMounted) {
-          setSummaryLoading(false);
-        }
+        setSummaryLoading(false);
       }
     };
 
-    fetchSummary();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    fetchData();
+  }, [expenses]);
 
   // Get top spending categories
   const topCategories = Object.entries(categoryTotals)
     .sort(([, amountA], [, amountB]) => amountB - amountA)
     .slice(0, 3);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
         Dashboard
       </Typography>
-
-      {(error || summaryError) && (
+      
+      {summaryError && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error || summaryError}
+          {summaryError}
         </Alert>
       )}
 
@@ -122,11 +96,7 @@ const Dashboard: React.FC = () => {
             }}
           >
             <Typography variant="h6">Total Expenses</Typography>
-            {summaryLoading ? (
-              <CircularProgress size={24} sx={{ my: 2 }} />
-            ) : (
-              <Typography variant="h3">${totalExpense.toFixed(2)}</Typography>
-            )}
+            <Typography variant="h3">${totalExpense.toFixed(2)}</Typography>
           </Paper>
         </Grid>
 
@@ -142,23 +112,7 @@ const Dashboard: React.FC = () => {
             }}
           >
             <Typography variant="h6">This Month</Typography>
-            {summaryLoading ? (
-              <CircularProgress size={24} sx={{ my: 2 }} />
-            ) : (
-              <Typography variant="h3">
-                ${Number(expenses
-                  .filter(expense => {
-                    const today = new Date();
-                    const expenseDate = new Date(expense.date);
-                    return (
-                      expenseDate.getMonth() === today.getMonth() &&
-                      expenseDate.getFullYear() === today.getFullYear()
-                    );
-                  })
-                  .reduce((sum, expense) => Number(sum) + Number(expense.amount), 0))
-                  .toFixed(2)}
-              </Typography>
-            )}
+            <Typography variant="h3">${monthlyExpense.toFixed(2)}</Typography>
           </Paper>
         </Grid>
 
@@ -184,12 +138,8 @@ const Dashboard: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Top Spending Categories
             </Typography>
-            {summaryLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              topCategories.map(([category, amount], index) => (
+            {topCategories.length > 0 ? (
+              topCategories.map(([category, amount]) => (
                 <Box key={category} sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body1">{category}</Typography>
                   <Typography variant="body1" fontWeight="bold">
@@ -197,6 +147,8 @@ const Dashboard: React.FC = () => {
                   </Typography>
                 </Box>
               ))
+            ) : (
+              <Typography variant="body2">No spending data available</Typography>
             )}
           </Paper>
         </Grid>
@@ -207,11 +159,7 @@ const Dashboard: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Recent Expenses
             </Typography>
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress />
-              </Box>
-            ) : (
+            {recentExpenses.length > 0 ? (
               recentExpenses.map(expense => (
                 <Box key={expense.id} sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2">
@@ -222,6 +170,8 @@ const Dashboard: React.FC = () => {
                   </Typography>
                 </Box>
               ))
+            ) : (
+              <Typography variant="body2">No recent expenses</Typography>
             )}
           </Paper>
         </Grid>

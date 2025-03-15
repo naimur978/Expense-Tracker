@@ -1,11 +1,17 @@
 import React from 'react';
-import { render, screen, act, waitFor } from '@testing-library/react';
-import { ExpenseProvider } from '../../contexts/ExpenseContext';
+import { render, screen, waitFor } from '../../utils/test-utils';
 import Dashboard from './Dashboard';
 import { api } from '../../services/api';
 
-// Mock the API module
-jest.mock('../../services/api');
+jest.mock('../../services/api', () => ({
+  api: {
+    getExpenses: jest.fn(),
+    createExpense: jest.fn(),
+    updateExpense: jest.fn(),
+    deleteExpense: jest.fn(),
+    getExpenseSummary: jest.fn()
+  }
+}));
 
 const mockExpenses = [
   {
@@ -36,70 +42,55 @@ const mockSummaryData = {
 
 describe('Dashboard Component', () => {
   beforeEach(() => {
-    // Reset all mocks before each test
     jest.clearAllMocks();
-    
-    // Setup API mock implementations
+    localStorage.clear();
+    localStorage.setItem('access_token', 'test-token');
     (api.getExpenses as jest.Mock).mockResolvedValue(mockExpenses);
     (api.getExpenseSummary as jest.Mock).mockResolvedValue(mockSummaryData);
   });
 
   it('renders loading state initially', async () => {
-    await act(async () => {
-      render(
-        <ExpenseProvider>
-          <Dashboard />
-        </ExpenseProvider>
-      );
-    });
-
+    render(<Dashboard />);
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
   it('displays expense summary after loading', async () => {
-    await act(async () => {
-      render(
-        <ExpenseProvider>
-          <Dashboard />
-        </ExpenseProvider>
-      );
-    });
+    const { rerender } = render(<Dashboard />);
 
+    // Wait for expense data to load
     await waitFor(() => {
       expect(screen.getByText('Total Expenses')).toBeInTheDocument();
-      expect(screen.getByText('$300.00')).toBeInTheDocument(); // Sum of mock expenses
+    });
+
+    // Rerender to ensure state updates are applied
+    rerender(<Dashboard />);
+
+    // Now check for specific values
+    await waitFor(() => {
+      const totalElement = screen.getByText((content, element) => {
+        return element?.tagName.toLowerCase() === 'h3' && content.includes('300.00');
+      });
+      expect(totalElement).toBeInTheDocument();
+      expect(screen.getByText('Transportation')).toBeInTheDocument();
+      expect(screen.getByText('Food & Dining')).toBeInTheDocument();
     });
   });
 
   it('displays error message when API fails', async () => {
-    // Mock API error
-    (api.getExpenseSummary as jest.Mock).mockRejectedValue(new Error('API Error'));
-
-    await act(async () => {
-      render(
-        <ExpenseProvider>
-          <Dashboard />
-        </ExpenseProvider>
-      );
-    });
-
+    (api.getExpenseSummary as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
+    
+    render(<Dashboard />);
+    
     await waitFor(() => {
       expect(screen.getByText('Failed to load expense summary')).toBeInTheDocument();
     });
   });
 
-  it('shows top spending categories', async () => {
-    await act(async () => {
-      render(
-        <ExpenseProvider>
-          <Dashboard />
-        </ExpenseProvider>
-      );
-    });
-
+  it('shows transaction count', async () => {
+    render(<Dashboard />);
+    
     await waitFor(() => {
-      expect(screen.getByText('Transportation')).toBeInTheDocument();
-      expect(screen.getByText('Food & Dining')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
     });
   });
 });

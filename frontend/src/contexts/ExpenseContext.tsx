@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, ReactNode, useCallback, useEffect } from 'react';
 import { Expense, ExpenseFilter } from '../types/expense';
 import { api } from '../services/api';
 
@@ -61,7 +61,8 @@ const expenseReducer = (state: ExpenseState, action: ExpenseAction): ExpenseStat
       return {
         ...state,
         expenses: updatedExpenses,
-        filteredExpenses: applyFilter(updatedExpenses, state.filter)
+        filteredExpenses: applyFilter(updatedExpenses, state.filter),
+        loading: false
       };
     case 'EDIT_EXPENSE':
       const editedExpenses = state.expenses.map(expense => 
@@ -70,14 +71,16 @@ const expenseReducer = (state: ExpenseState, action: ExpenseAction): ExpenseStat
       return {
         ...state,
         expenses: editedExpenses,
-        filteredExpenses: applyFilter(editedExpenses, state.filter)
+        filteredExpenses: applyFilter(editedExpenses, state.filter),
+        loading: false
       };
     case 'DELETE_EXPENSE':
       const remainingExpenses = state.expenses.filter(expense => expense.id !== action.payload);
       return {
         ...state,
         expenses: remainingExpenses,
-        filteredExpenses: applyFilter(remainingExpenses, state.filter)
+        filteredExpenses: applyFilter(remainingExpenses, state.filter),
+        loading: false
       };
     case 'SET_FILTER':
       return {
@@ -101,7 +104,8 @@ const expenseReducer = (state: ExpenseState, action: ExpenseAction): ExpenseStat
         ...state,
         expenses: action.payload,
         filteredExpenses: applyFilter(action.payload, state.filter),
-        loading: false
+        loading: false,
+        error: null
       };
     default:
       return state;
@@ -137,21 +141,19 @@ const applyFilter = (expenses: Expense[], filter: ExpenseFilter): Expense[] => {
 export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(expenseReducer, initialState);
 
-  const loadExpenses = async () => {
-    if (state.loading) return;
-    
+  const loadExpenses = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
       const response = await api.getExpenses();
-      const expenses = Array.isArray(response) ? response : response.results || [];
+      const expenses = Array.isArray(response) ? response : [];
       dispatch({ type: 'LOAD_EXPENSES', payload: expenses });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load expenses' });
-      dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []);
 
-  const addExpense = async (expense: Omit<Expense, 'id' | 'createdAt'>) => {
+  const addExpense = useCallback(async (expense: Omit<Expense, 'id' | 'createdAt'>) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -159,12 +161,10 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'ADD_EXPENSE', payload: newExpense });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to add expense' });
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []);
 
-  const updateExpense = async (expense: Expense) => {
+  const updateExpense = useCallback(async (expense: Expense) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -172,12 +172,10 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'EDIT_EXPENSE', payload: updatedExpense });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to update expense' });
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []);
 
-  const deleteExpense = async (id: string) => {
+  const deleteExpense = useCallback(async (id: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -185,10 +183,8 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'DELETE_EXPENSE', payload: id });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to delete expense' });
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, []);
 
   // Load expenses whenever the auth token changes
   useEffect(() => {

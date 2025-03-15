@@ -26,12 +26,8 @@ const mockExpense = {
 };
 
 // Test component that uses the context
-const TestComponent: React.FC<{ onMount?: () => void }> = ({ onMount }) => {
-  const { state, dispatch, loadExpenses, addExpense, updateExpense, deleteExpense } = useExpense();
-  
-  React.useEffect(() => {
-    if (onMount) onMount();
-  }, [onMount]);
+const TestComponent: React.FC = () => {
+  const { state, loadExpenses, addExpense, updateExpense, deleteExpense, dispatch } = useExpense();
   
   return (
     <div>
@@ -54,10 +50,12 @@ const TestComponent: React.FC<{ onMount?: () => void }> = ({ onMount }) => {
 describe('ExpenseContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
+    localStorage.setItem('access_token', 'test-token');
     (api.getExpenses as jest.Mock).mockResolvedValue([]);
   });
 
-  test('provides initial state', async () => {
+  it('provides initial state', async () => {
     render(<TestComponent />);
 
     await waitFor(() => {
@@ -68,76 +66,72 @@ describe('ExpenseContext', () => {
     });
   });
 
-  test('loads expenses successfully', async () => {
+  it('loads expenses successfully', async () => {
     (api.getExpenses as jest.Mock).mockResolvedValueOnce([mockExpense]);
     
     render(<TestComponent />);
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('expense-count')).toHaveTextContent('1');
       expect(screen.getByTestId('filtered-count')).toHaveTextContent('1');
     });
   });
 
-  test('handles load expenses error', async () => {
+  it('handles load expenses error', async () => {
     const errorMessage = 'Failed to load expenses';
     (api.getExpenses as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
-
+    
     render(<TestComponent />);
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('error')).toHaveTextContent(errorMessage);
     });
   });
 
-  test('adds expense successfully', async () => {
+  it('adds expense successfully', async () => {
     (api.createExpense as jest.Mock).mockResolvedValueOnce(mockExpense);
     const user = userEvent.setup();
     
     render(<TestComponent />);
-
     await user.click(screen.getByText('Add'));
-
+    
     await waitFor(() => {
       expect(api.createExpense).toHaveBeenCalledWith(mockExpense);
       expect(screen.getByTestId('expense-count')).toHaveTextContent('1');
     });
   });
 
-  test('updates expense successfully', async () => {
-    const updatedExpense = { ...mockExpense, amount: 200 };
-    (api.updateExpense as jest.Mock).mockResolvedValueOnce(updatedExpense);
+  it('updates expense successfully', async () => {
+    (api.updateExpense as jest.Mock).mockResolvedValueOnce(mockExpense);
     (api.getExpenses as jest.Mock).mockResolvedValueOnce([mockExpense]);
     
     const user = userEvent.setup();
     render(<TestComponent />);
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('expense-count')).toHaveTextContent('1');
     });
-
+    
     await user.click(screen.getByText('Update'));
-
     expect(api.updateExpense).toHaveBeenCalledWith(mockExpense.id, mockExpense);
   });
 
-  test('deletes expense successfully', async () => {
+  it('deletes expense successfully', async () => {
     (api.deleteExpense as jest.Mock).mockResolvedValueOnce(undefined);
     (api.getExpenses as jest.Mock).mockResolvedValueOnce([mockExpense]);
     
     const user = userEvent.setup();
     render(<TestComponent />);
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('expense-count')).toHaveTextContent('1');
     });
-
+    
     await user.click(screen.getByText('Delete'));
-
     expect(api.deleteExpense).toHaveBeenCalledWith('1');
   });
 
-  test('filters expenses correctly', async () => {
+  it('filters expenses correctly', async () => {
     const expenses = [
       mockExpense,
       { 
@@ -152,36 +146,32 @@ describe('ExpenseContext', () => {
     
     const user = userEvent.setup();
     render(<TestComponent />);
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('expense-count')).toHaveTextContent('2');
       expect(screen.getByTestId('filtered-count')).toHaveTextContent('2');
     });
-
+    
     await user.click(screen.getByText('Filter'));
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('filtered-count')).toHaveTextContent('1');
     });
   });
 
-  test('clears error state', async () => {
-    const user = userEvent.setup();
+  it('clears error state', async () => {
+    const errorMessage = 'Failed to load expenses';
+    (api.getExpenses as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
     
-    render(
-      <TestComponent
-        onMount={() => {
-          (api.getExpenses as jest.Mock).mockRejectedValueOnce(new Error('Test error'));
-        }}
-      />
-    );
-
+    const user = userEvent.setup();
+    render(<TestComponent />);
+    
     await waitFor(() => {
-      expect(screen.getByTestId('error')).toHaveTextContent('Failed to load expenses');
+      expect(screen.getByTestId('error')).toHaveTextContent(errorMessage);
     });
-
+    
     await user.click(screen.getByText('Clear Error'));
-
+    
     await waitFor(() => {
       expect(screen.getByTestId('error')).toHaveTextContent('no error');
     });
