@@ -3,23 +3,13 @@ module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapper: {
-    '^react-router-dom$': '<rootDir>/__mocks__/react-router-dom.js',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js'
+    '\\.(css|less|scss|sass)$': '<rootDir>/src/__mocks__/styleMock.js',
+    '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/__mocks__/fileMock.js',
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.json'
-    }]
+      tsconfig: '<rootDir>/tsconfig.json',
+    }],
   },
-  transformIgnorePatterns: [
-    '/node_modules/(?!react-router-dom).+\\.js$'
-  ],
-  testPathIgnorePatterns: ['/node_modules/'],
-  moduleDirectories: ['node_modules', 'src'],
-  globals: {
-    'ts-jest': {
-      isolatedModules: true
-    }
-  }
+  testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
 };

@@ -1,6 +1,7 @@
 import { Expense } from '../types/expense';
 
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_PORT = process.env.REACT_APP_API_PORT || '8000';
+const API_BASE_URL = `http://localhost:${API_PORT}/api`;
 
 export const api = {
   async getExpenses() {

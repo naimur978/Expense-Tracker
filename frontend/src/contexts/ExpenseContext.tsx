@@ -32,7 +32,7 @@ const initialState: ExpenseState = {
 };
 
 // Create context
-const ExpenseContext = createContext<{
+export const ExpenseContext = createContext<{
   state: ExpenseState;
   dispatch: React.Dispatch<ExpenseAction>;
   loadExpenses: () => Promise<void>;

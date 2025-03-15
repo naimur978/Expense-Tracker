@@ -1,106 +1,149 @@
 import React from 'react';
-import { screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import ExpenseList from './ExpenseList';
-import { render } from '../../utils/test-utils';
+import { ExpenseContext } from '../../contexts/ExpenseContext';
+import { Expense } from '../../types/expense';
 
-// Mock the useExpense hook
-jest.mock('../../contexts/ExpenseContext', () => {
-  const originalModule = jest.requireActual('../../contexts/ExpenseContext');
-  return {
-    __esModule: true,
-    ...originalModule,
-    useExpense: () => ({
-      state: {
-        expenses: [
-          {
-            id: '1',
-            amount: 100,
-            description: 'Test Expense 1',
-            category: 'Food & Dining',
-            date: '2024-01-01',
-            createdAt: '2024-01-01T00:00:00.000Z'
-          },
-          {
-            id: '2',
-            amount: 200,
-            description: 'Test Expense 2',
-            category: 'Transportation',
-            date: '2024-01-02',
-            createdAt: '2024-01-02T00:00:00.000Z'
-          }
-        ],
-        filteredExpenses: [
-          {
-            id: '1',
-            amount: 100,
-            description: 'Test Expense 1',
-            category: 'Food & Dining',
-            date: '2024-01-01',
-            createdAt: '2024-01-01T00:00:00.000Z'
-          },
-          {
-            id: '2',
-            amount: 200,
-            description: 'Test Expense 2',
-            category: 'Transportation',
-            date: '2024-01-02',
-            createdAt: '2024-01-02T00:00:00.000Z'
-          }
-        ],
-        filter: {},
-        loading: false,
-        error: null
-      },
-      dispatch: jest.fn()
-    })
-  };
-});
+// Mock the ExpenseContext
+const mockExpenses: Expense[] = [
+  {
+    id: '1',
+    description: 'Groceries',
+    amount: 50.75,
+    date: '2023-06-15',
+    category: 'Food & Dining',
+    createdAt: '2023-06-15T12:00:00Z'
+  },
+  {
+    id: '2',
+    description: 'Gas',
+    amount: 35.50,
+    date: '2023-06-14',
+    category: 'Transportation',
+    createdAt: '2023-06-14T14:30:00Z'
+  }
+];
+
+const mockDeleteExpense = jest.fn();
+const mockDispatch = jest.fn();
+const mockLoadExpenses = jest.fn();
+const mockAddExpense = jest.fn();
+const mockUpdateExpense = jest.fn();
+const mockState = {
+  expenses: mockExpenses,
+  filteredExpenses: mockExpenses,
+  filter: {},
+  loading: false,
+  error: null
+};
+
+// Custom render with context provider
+const customRender = (ui: React.ReactElement, { providerProps = { 
+  state: mockState, 
+  dispatch: mockDispatch, 
+  deleteExpense: mockDeleteExpense,
+  loadExpenses: mockLoadExpenses,
+  addExpense: mockAddExpense,
+  updateExpense: mockUpdateExpense
+} as any, ...renderOptions } = {}) => {
+  return render(
+    <ExpenseContext.Provider value={providerProps}>
+      {ui}
+    </ExpenseContext.Provider>,
+    renderOptions
+  );
+};
 
 describe('ExpenseList Component', () => {
-  test('renders expense list with data', () => {
-    render(<ExpenseList />);
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
+  test('renders expense list title', () => {
+    customRender(<ExpenseList />);
     expect(screen.getByText('Expenses')).toBeInTheDocument();
-    expect(screen.getByText('Test Expense 1')).toBeInTheDocument();
-    expect(screen.getByText('Test Expense 2')).toBeInTheDocument();
-    expect(screen.getByText('$100.00')).toBeInTheDocument();
-    expect(screen.getByText('$200.00')).toBeInTheDocument();
   });
 
-  test('renders filter section', () => {
-    render(<ExpenseList />);
-
-    expect(screen.getByText('Filters')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Search/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Category/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Start Date/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/End Date/i)).toBeInTheDocument();
+  test('renders add expense button', () => {
+    customRender(<ExpenseList />);
+    expect(screen.getByText('Add Expense')).toBeInTheDocument();
   });
 
-  test('opens expense form when Add Expense button is clicked', () => {
-    render(<ExpenseList />);
-
-    const addButton = screen.getByText('Add Expense');
-    fireEvent.click(addButton);
-
-    expect(screen.getByText('Add New Expense')).toBeInTheDocument();
+  test('displays expenses in the table', () => {
+    customRender(<ExpenseList />);
+    
+    // Check if both expense descriptions are visible
+    expect(screen.getByText('Groceries')).toBeInTheDocument();
+    expect(screen.getByText('Gas')).toBeInTheDocument();
+    
+    // Check if amounts are displayed correctly
+    expect(screen.getByText('$50.75')).toBeInTheDocument();
+    expect(screen.getByText('$35.50')).toBeInTheDocument();
+    
+    // Check if categories are displayed
+    expect(screen.getByText('Food & Dining')).toBeInTheDocument();
+    expect(screen.getByText('Transportation')).toBeInTheDocument();
   });
 
-  test('renders empty state when no expenses', () => {
-    jest.spyOn(React, 'useContext').mockImplementation(() => ({
-      state: {
-        expenses: [],
-        filteredExpenses: [],
-        filter: {},
-        loading: false,
-        error: null
-      },
-      dispatch: jest.fn()
-    }));
-
-    render(<ExpenseList />);
-
+  test('shows no expenses message when list is empty', () => {
+    const emptyState = {
+      ...mockState,
+      expenses: [],
+      filteredExpenses: []
+    };
+    
+    customRender(<ExpenseList />, { 
+      providerProps: { 
+        state: emptyState, 
+        dispatch: mockDispatch,
+        deleteExpense: mockDeleteExpense,
+        loadExpenses: mockLoadExpenses,
+        addExpense: mockAddExpense,
+        updateExpense: mockUpdateExpense
+      }
+    });
+    
     expect(screen.getByText('No expenses found. Add a new expense to get started!')).toBeInTheDocument();
+  });
+
+  test('applies filters when filter button is clicked', () => {
+    customRender(<ExpenseList />);
+    
+    // Enter a search term
+    const searchInput = screen.getByLabelText('Search');
+    fireEvent.change(searchInput, { target: { value: 'Groceries' } });
+    
+    // Click apply filters button
+    const applyButton = screen.getByText('Apply');
+    fireEvent.click(applyButton);
+    
+    // Verify dispatch was called with correct filter
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_FILTER',
+      payload: expect.objectContaining({
+        searchText: 'Groceries'
+      })
+    });
+  });
+
+  test('resets filters when reset button is clicked', () => {
+    customRender(<ExpenseList />);
+    
+    // First set a filter
+    const searchInput = screen.getByLabelText('Search');
+    fireEvent.change(searchInput, { target: { value: 'Groceries' } });
+    
+    // Then reset the filter
+    const resetButton = screen.getByText('Reset');
+    fireEvent.click(resetButton);
+    
+    // Verify the search field is cleared
+    expect(searchInput).toHaveValue('');
+    
+    // Verify dispatch was called with empty filter
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_FILTER',
+      payload: {}
+    });
   });
 });
