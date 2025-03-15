@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, screen, act, waitFor } from '../utils/test-utils';
+import { render, screen, waitFor } from '../utils/test-utils';
 import '@testing-library/jest-dom';
-import { ExpenseProvider, useExpense } from './ExpenseContext';
+import { useExpense } from './ExpenseContext';
 import { api } from '../services/api';
 import userEvent from '@testing-library/user-event';
 

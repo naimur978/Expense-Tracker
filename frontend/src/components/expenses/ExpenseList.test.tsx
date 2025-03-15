@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ExpenseList from './ExpenseList';
 import { ExpenseContext } from '../../contexts/ExpenseContext';
 import { Expense } from '../../types/expense';

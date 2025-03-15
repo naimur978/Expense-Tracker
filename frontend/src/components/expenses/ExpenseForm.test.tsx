@@ -116,8 +116,6 @@ describe('ExpenseForm Component', () => {
   });
 
   test('submits form with valid data for new expense', async () => {
-    const today = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
-
     customRender(
       <ExpenseForm open={true} onClose={mockOnClose} mode="add" expense={null} />
     );

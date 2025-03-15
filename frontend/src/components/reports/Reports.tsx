@@ -15,7 +15,6 @@ import {
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { useExpense } from '../../contexts/ExpenseContext';
 import { api } from '../../services/api';
-import type { ChartData, ChartOptions } from 'chart.js';
 
 // Register ChartJS components
 ChartJS.register(
