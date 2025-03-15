@@ -16,7 +16,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     // Calculate total expenses and recent expenses from current state
-    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const total = expenses.reduce((sum, expense) => Number(sum) + Number(expense.amount), 0);
     setTotalExpense(total);
 
     // Get recent expenses - last 5
@@ -128,7 +128,7 @@ const Dashboard: React.FC = () => {
               <CircularProgress size={24} sx={{ my: 2 }} />
             ) : (
               <Typography variant="h3">
-                ${expenses
+                ${Number(expenses
                   .filter(expense => {
                     const today = new Date();
                     const expenseDate = new Date(expense.date);
@@ -137,7 +137,7 @@ const Dashboard: React.FC = () => {
                       expenseDate.getFullYear() === today.getFullYear()
                     );
                   })
-                  .reduce((sum, expense) => sum + expense.amount, 0)
+                  .reduce((sum, expense) => Number(sum) + Number(expense.amount), 0))
                   .toFixed(2)}
               </Typography>
             )}
@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
                     {new Date(expense.date).toLocaleDateString()} - {expense.description}
                   </Typography>
                   <Typography variant="body2" fontWeight="bold">
-                    ${expense.amount.toFixed(2)}
+                    ${Number(expense.amount).toFixed(2)}
                   </Typography>
                 </Box>
               ))

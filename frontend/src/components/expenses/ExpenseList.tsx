@@ -259,7 +259,7 @@ const ExpenseList: React.FC = () => {
                       <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
                       <TableCell>{expense.description}</TableCell>
                       <TableCell>{expense.category}</TableCell>
-                      <TableCell align="right">${expense.amount.toFixed(2)}</TableCell>
+                      <TableCell align="right">${Number(expense.amount).toFixed(2)}</TableCell>
                       <TableCell align="center">
                         <Tooltip title="Edit">
                           <IconButton 

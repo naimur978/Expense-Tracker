@@ -141,7 +141,9 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (state.loading) return; // Prevent multiple simultaneous loads
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      const expenses = await api.getExpenses();
+      const response = await api.getExpenses();
+      // Handle paginated response
+      const expenses = Array.isArray(response) ? response : response.results || [];
       dispatch({ type: 'LOAD_EXPENSES', payload: expenses });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load expenses' });

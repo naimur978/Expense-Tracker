@@ -28,6 +28,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.all().order_by('-date')
     serializer_class = ExpenseSerializer
     filterset_class = ExpenseFilter
+    pagination_class = None  # Disable pagination for this viewset
     
     def create(self, request, *args, **kwargs):
         # Fast create response

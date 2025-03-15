@@ -1,7 +1,8 @@
 import React from 'react';
-import { Container, Box, CssBaseline, AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { Menu as MenuIcon, Dashboard, ReceiptLong, BarChart, Settings } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Container, Box, CssBaseline, AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Menu, MenuItem, Avatar } from '@mui/material';
+import { Menu as MenuIcon, Dashboard, ReceiptLong, BarChart, Settings, Person, Logout } from '@mui/icons-material';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,9 +10,26 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const toggleDrawer = () => {
     setDrawerOpen(!drawerOpen);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    logout();
+    navigate('/login');
   };
 
   const menuItems = [
@@ -37,9 +55,49 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Expense Tracker
           </Typography>
+          
+          {/* User Menu */}
+          <IconButton
+            onClick={handleMenuOpen}
+            sx={{ ml: 2 }}
+            aria-controls="user-menu"
+            aria-haspopup="true"
+          >
+            <Avatar sx={{ bgcolor: 'secondary.main' }}>
+              {user?.username?.charAt(0).toUpperCase() || 'U'}
+            </Avatar>
+          </IconButton>
+          <Menu
+            id="user-menu"
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <MenuItem onClick={handleMenuClose}>
+              <ListItemIcon>
+                <Person fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary={user?.username || 'User'} secondary={user?.email} />
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <Logout fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary="Logout" />
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
       
@@ -85,7 +143,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main content */}
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
-        {children}
+        <Container maxWidth="lg">
+          {children}
+        </Container>
       </Box>
     </Box>
   );
