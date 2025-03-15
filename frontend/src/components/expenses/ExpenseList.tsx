@@ -48,34 +48,34 @@ const EXPENSE_CATEGORIES: ExpenseCategory[] = [
 ];
 
 const ExpenseList: React.FC = () => {
-  const { state, dispatch, deleteExpense } = useExpense();
-  const { expenses, filteredExpenses, filter, loading, error } = state;
+  const { state, deleteExpense, dispatch } = useExpense();
+  const { filteredExpenses, loading, error } = state;
+  const [open, setOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   
   // States for dialog and pagination
-  const [openForm, setOpenForm] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<Expense | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
   
   // Filter state
-  const [searchText, setSearchText] = useState(filter.searchText || '');
-  const [category, setCategory] = useState<ExpenseCategory | ''>(filter.category || '');
-  const [startDate, setStartDate] = useState(filter.startDate || '');
-  const [endDate, setEndDate] = useState(filter.endDate || '');
+  const [searchText, setSearchText] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory | ''>('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Handle opening the form for adding a new expense
   const handleAddExpense = () => {
-    setSelectedExpense(undefined);
+    setSelectedExpense(null);
     setFormMode('add');
-    setOpenForm(true);
+    setOpen(true);
   };
 
   // Handle opening the form for editing an expense
   const handleEditExpense = (expense: Expense) => {
     setSelectedExpense(expense);
     setFormMode('edit');
-    setOpenForm(true);
+    setOpen(true);
   };
 
   // Handle deleting an expense
@@ -91,7 +91,7 @@ const ExpenseList: React.FC = () => {
 
   // Handle closing the form dialog
   const handleCloseForm = () => {
-    setOpenForm(false);
+    setOpen(false);
   };
 
   // Handle pagination changes
@@ -306,7 +306,7 @@ const ExpenseList: React.FC = () => {
 
       {/* Expense Form Dialog */}
       <ExpenseForm
-        open={openForm}
+        open={open}
         onClose={handleCloseForm}
         expense={selectedExpense}
         mode={formMode}

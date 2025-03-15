@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useContext, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useReducer, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { Expense, ExpenseFilter } from '../types/expense';
 import { api } from '../services/api';
 
@@ -186,16 +186,20 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, []);
 
-  // Load expenses whenever the auth token changes
-  useEffect(() => {
+  // Extract token check to memoized value
+  const authTokenValid = useMemo(() => {
     const token = localStorage.getItem('access_token');
-    if (token) {
+    return Boolean(token);
+  }, []);
+
+  // Load expenses when auth token changes
+  useEffect(() => {
+    if (authTokenValid) {
       loadExpenses();
     } else {
-      // Clear expenses when token is removed
       dispatch({ type: 'LOAD_EXPENSES', payload: [] });
     }
-  }, [localStorage.getItem('access_token')]); // Re-run when token changes
+  }, [authTokenValid, loadExpenses]);
 
   return (
     <ExpenseContext.Provider value={{ 

@@ -1,33 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, Grid, FormControl, InputLabel, Select, MenuItem, CircularProgress, Alert } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Typography, Grid, Paper, FormControl, InputLabel, Select, MenuItem, CircularProgress, Alert } from '@mui/material';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
   LinearScale, 
-  BarElement, 
+  PointElement, 
+  LineElement, 
+  BarElement,
   Title, 
   Tooltip, 
   Legend, 
-  ArcElement,
-  PointElement,
-  LineElement
+  ArcElement
 } from 'chart.js';
-import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Line, Bar, Pie } from 'react-chartjs-2';
 import { useExpense } from '../../contexts/ExpenseContext';
-import { ExpenseCategory } from '../../types/expense';
 import { api } from '../../services/api';
+import type { ChartData, ChartOptions } from 'chart.js';
 
 // Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
-  ArcElement,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement
 );
 
 const Reports: React.FC = () => {
@@ -36,7 +36,26 @@ const Reports: React.FC = () => {
   const [timeFrame, setTimeFrame] = useState<'weekly' | 'monthly' | 'yearly'>('monthly');
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-  
+
+  // Define colors for charts
+  const colors = useMemo(() => ({
+    primary: '#1976d2',
+    secondary: '#dc004e',
+    success: '#4caf50',
+    background: [
+      '#1976d2',
+      '#dc004e',
+      '#4caf50',
+      '#ff9800',
+      '#9c27b0',
+      '#795548',
+      '#607d8b',
+      '#e91e63',
+      '#673ab7',
+      '#009688'
+    ]
+  }), []);
+
   // Data for category distribution
   const [categoryData, setCategoryData] = useState<{
     labels: string[];
@@ -85,20 +104,6 @@ const Reports: React.FC = () => {
     ],
   });
 
-  const colors = [
-    'rgba(255, 99, 132, 0.8)',
-    'rgba(54, 162, 235, 0.8)',
-    'rgba(255, 206, 86, 0.8)',
-    'rgba(75, 192, 192, 0.8)',
-    'rgba(153, 102, 255, 0.8)',
-    'rgba(255, 159, 64, 0.8)',
-    'rgba(255, 99, 255, 0.8)',
-    'rgba(54, 162, 86, 0.8)',
-    'rgba(255, 206, 235, 0.8)',
-    'rgba(75, 192, 64, 0.8)',
-    'rgba(153, 102, 132, 0.8)',
-  ];
-
   // Fetch and process data from API
   useEffect(() => {
     const fetchSummaryData = async () => {
@@ -109,7 +114,7 @@ const Reports: React.FC = () => {
         // Process category data
         const categories = summaryData.category_totals.map((item: any) => item.category);
         const amounts = summaryData.category_totals.map((item: any) => item.total);
-        const backgroundColors = categories.map((_: any, index: number) => colors[index % colors.length]);
+        const backgroundColors = categories.map((_: any, index: number) => colors.background[index % colors.background.length]);
         const borderColors = backgroundColors.map((color: string) => color.replace('0.8', '1'));
         
         setCategoryData({
@@ -160,7 +165,17 @@ const Reports: React.FC = () => {
     };
 
     fetchSummaryData();
-  }, [timeFrame]);
+  }, [timeFrame, colors]);
+
+  // Update charts on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      ChartJS.defaults.responsive = true;
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []); // No need for colors dependency as it's not used in this effect
 
   // Chart options
   const categoryOptions = {

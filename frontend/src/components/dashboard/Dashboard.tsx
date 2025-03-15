@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, Paper, Typography, Box, CircularProgress, Alert } from '@mui/material';
+import { Grid, Paper, Typography, Box, Alert } from '@mui/material';
 import { useExpense } from '../../contexts/ExpenseContext';
 import { Expense, ExpenseCategory } from '../../types/expense';
 import { api } from '../../services/api';
@@ -7,7 +7,6 @@ import { api } from '../../services/api';
 const Dashboard: React.FC = () => {
   const { state } = useExpense();
   const { expenses } = state;
-  const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [totalExpense, setTotalExpense] = useState(0);
   const [monthlyExpense, setMonthlyExpense] = useState(0);
@@ -17,7 +16,6 @@ const Dashboard: React.FC = () => {
   // Calculate totals and fetch summary data
   useEffect(() => {
     const fetchData = async () => {
-      setSummaryLoading(true);
       try {
         const summaryData = await api.getExpenseSummary('monthly');
         
@@ -58,8 +56,6 @@ const Dashboard: React.FC = () => {
       } catch (err) {
         setSummaryError('Failed to load expense summary');
         console.error('Failed to fetch summary:', err);
-      } finally {
-        setSummaryLoading(false);
       }
     };
 

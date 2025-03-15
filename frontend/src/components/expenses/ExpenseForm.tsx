@@ -21,7 +21,7 @@ import { Expense, ExpenseCategory } from '../../types/expense';
 interface ExpenseFormProps {
   open: boolean;
   onClose: () => void;
-  expense?: Expense;
+  expense: Expense | null;
   mode: 'add' | 'edit';
 }
 

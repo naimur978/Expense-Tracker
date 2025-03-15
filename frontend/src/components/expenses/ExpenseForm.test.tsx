@@ -42,7 +42,7 @@ describe('ExpenseForm Component', () => {
 
   test('renders Add Expense form correctly', () => {
     customRender(
-      <ExpenseForm open={true} onClose={mockOnClose} mode="add" />
+      <ExpenseForm open={true} onClose={mockOnClose} mode="add" expense={null} />
     );
 
     // Check for form title
@@ -82,7 +82,7 @@ describe('ExpenseForm Component', () => {
 
   test('validates form inputs', async () => {
     customRender(
-      <ExpenseForm open={true} onClose={mockOnClose} mode="add" />
+      <ExpenseForm open={true} onClose={mockOnClose} mode="add" expense={null} />
     );
 
     // Try to submit with empty description
@@ -119,7 +119,7 @@ describe('ExpenseForm Component', () => {
     const today = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
 
     customRender(
-      <ExpenseForm open={true} onClose={mockOnClose} mode="add" />
+      <ExpenseForm open={true} onClose={mockOnClose} mode="add" expense={null} />
     );
 
     // Fill in form
@@ -180,7 +180,7 @@ describe('ExpenseForm Component', () => {
 
   test('closes the form when cancel is clicked', () => {
     customRender(
-      <ExpenseForm open={true} onClose={mockOnClose} mode="add" />
+      <ExpenseForm open={true} onClose={mockOnClose} mode="add" expense={null} />
     );
     
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
