@@ -14,12 +14,13 @@ const Dashboard: React.FC = () => {
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<any>(null);
 
+  // Calculate totals effect
   useEffect(() => {
-    // Calculate total expenses and recent expenses from current state
+    if (!expenses.length) return;
+
     const total = expenses.reduce((sum, expense) => Number(sum) + Number(expense.amount), 0);
     setTotalExpense(total);
 
-    // Get recent expenses - last 5
     const sortedExpenses = [...expenses].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -28,10 +29,16 @@ const Dashboard: React.FC = () => {
 
   // Fetch summary data from API
   useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
+    let isMounted = true;
     const fetchSummary = async () => {
       setSummaryLoading(true);
       try {
         const summaryData = await api.getExpenseSummary('monthly');
+        if (!isMounted) return;
+        
         setSummary(summaryData);
         
         // Process category totals from the API response
@@ -49,21 +56,32 @@ const Dashboard: React.FC = () => {
           'Other': 0
         };
         
-        summaryData.category_totals.forEach((item: { category: ExpenseCategory; total: number }) => {
-          categoryMap[item.category] = item.total;
-        });
-        setCategoryTotals(categoryMap);
+        if (summaryData.category_totals) {
+          summaryData.category_totals.forEach((item: { category: ExpenseCategory; total: number }) => {
+            categoryMap[item.category] = item.total;
+          });
+        }
         
-        setSummaryError(null);
+        if (isMounted) {
+          setCategoryTotals(categoryMap);
+          setSummaryError(null);
+        }
       } catch (err) {
-        setSummaryError('Failed to load expense summary');
-        console.error('Failed to fetch summary:', err);
+        if (isMounted) {
+          setSummaryError('Failed to load expense summary');
+          console.error('Failed to fetch summary:', err);
+        }
       } finally {
-        setSummaryLoading(false);
+        if (isMounted) {
+          setSummaryLoading(false);
+        }
       }
     };
 
     fetchSummary();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Get top spending categories

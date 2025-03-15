@@ -1,7 +1,9 @@
 import { Expense } from '../types/expense';
 
+// Get the API URL from environment variable or use localhost for development
+const API_HOST = process.env.REACT_APP_API_HOST || 'localhost';  // Changed from 'backend' to 'localhost'
 const API_PORT = process.env.REACT_APP_API_PORT || '8000';
-const API_BASE_URL = `http://localhost:${API_PORT}/api`;
+const API_BASE_URL = `http://${API_HOST}:${API_PORT}/api`;
 
 let isRefreshing = false;
 let failedQueue: { resolve: (token: string) => void; reject: (error: any) => void; }[] = [];

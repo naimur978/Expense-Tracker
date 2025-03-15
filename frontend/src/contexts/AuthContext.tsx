@@ -31,7 +31,8 @@ type AuthAction =
   | { type: 'LOGIN_SUCCESS'; payload: User }
   | { type: 'LOGIN_FAILURE'; payload: string }
   | { type: 'LOGOUT' }
-  | { type: 'SET_LOADING'; payload: boolean };
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'CLEAR_ERROR' };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -65,6 +66,11 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return {
         ...state,
         loading: action.payload
+      };
+    case 'CLEAR_ERROR':
+      return {
+        ...state,
+        error: null
       };
     default:
       return state;
@@ -101,13 +107,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (username: string, password: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
       const { tokens, user } = await api.login(username, password);
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
       localStorage.setItem('user', JSON.stringify(user));
       dispatch({ type: 'LOGIN_SUCCESS', payload: user });
-    } catch (error) {
-      dispatch({ type: 'LOGIN_FAILURE', payload: 'Invalid credentials' });
+    } catch (error: any) {
+      let errorMessage = 'Invalid credentials';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
       throw error;
     }
   };
@@ -115,13 +126,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (username: string, email: string, password: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
       const { tokens, user } = await api.register(username, email, password);
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
       localStorage.setItem('user', JSON.stringify(user));
       dispatch({ type: 'LOGIN_SUCCESS', payload: user });
-    } catch (error) {
-      dispatch({ type: 'LOGIN_FAILURE', payload: 'Registration failed' });
+    } catch (error: any) {
+      let errorMessage = 'Registration failed';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
       throw error;
     }
   };

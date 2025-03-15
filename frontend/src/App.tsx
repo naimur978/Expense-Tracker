@@ -64,11 +64,11 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <ExpenseProvider>
-          <Router>
+    <Router>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <ExpenseProvider>
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={
@@ -115,10 +115,10 @@ const App: React.FC = () => {
               {/* Catch-all route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </Router>
-        </ExpenseProvider>
-      </AuthProvider>
-    </ThemeProvider>
+          </ExpenseProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </Router>
   );
 };
 

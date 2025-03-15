@@ -138,58 +138,68 @@ export const ExpenseProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [state, dispatch] = useReducer(expenseReducer, initialState);
 
   const loadExpenses = async () => {
-    if (state.loading) return; // Prevent multiple simultaneous loads
-    dispatch({ type: 'SET_LOADING', payload: true });
+    if (state.loading) return;
+    
     try {
+      dispatch({ type: 'SET_LOADING', payload: true });
       const response = await api.getExpenses();
-      // Handle paginated response
       const expenses = Array.isArray(response) ? response : response.results || [];
       dispatch({ type: 'LOAD_EXPENSES', payload: expenses });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load expenses' });
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   const addExpense = async (expense: Omit<Expense, 'id' | 'createdAt'>) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'CLEAR_ERROR' });
     try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
       const newExpense = await api.createExpense(expense);
       dispatch({ type: 'ADD_EXPENSE', payload: newExpense });
-      dispatch({ type: 'SET_LOADING', payload: false });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to add expense' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   const updateExpense = async (expense: Expense) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'CLEAR_ERROR' });
     try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
       const updatedExpense = await api.updateExpense(expense.id, expense);
       dispatch({ type: 'EDIT_EXPENSE', payload: updatedExpense });
-      dispatch({ type: 'SET_LOADING', payload: false });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to update expense' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   const deleteExpense = async (id: string) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'CLEAR_ERROR' });
     try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
       await api.deleteExpense(id);
       dispatch({ type: 'DELETE_EXPENSE', payload: id });
-      dispatch({ type: 'SET_LOADING', payload: false });
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: 'Failed to delete expense' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  // Load expenses when component mounts
+  // Load expenses whenever the auth token changes
   useEffect(() => {
-    loadExpenses();
-  }, []);
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      loadExpenses();
+    } else {
+      // Clear expenses when token is removed
+      dispatch({ type: 'LOAD_EXPENSES', payload: [] });
+    }
+  }, [localStorage.getItem('access_token')]); // Re-run when token changes
 
   return (
     <ExpenseContext.Provider value={{ 
